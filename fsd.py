@@ -4,14 +4,18 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 
 # Fetch historical stock data
-data = yf.download('JMFINANCIL.BO', start='2025-03-25', end='2025-04-30')
+data = yf.download('JMFINANCIL.BO', start='2024-03-25', end='2025-04-30')
 df = data.copy()  # Preserve all columns
+
+# Print fetched stock data for the given duration
+print("Stock data from 2024-03-25 to 2025-04-30:")
+print(data)
 
 # Compute daily returns using 'Close' price
 df['return'] = df['Close'].pct_change()
 
 # Create lagged return features (past 5 days)
-for i in range(1, 6):
+for i in range(1, 60):
     df[f'return_t-{i}'] = df['return'].shift(i)
 
 # Create target variable: 1 if next day's return is positive, 0 otherwise
