@@ -3,11 +3,11 @@ import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 
-# Fetch historical stock data (e.g., Apple stock from 2020 to 2023)
-data = yf.download('JMFINANCIL.BO', start='2020-01-01', end='2025-04-17')
-df = data['Close'].to_frame()
+# Fetch historical stock data
+data = yf.download('JMFINANCIL.BO', start='2025-03-25', end='2025-04-30')
+df = data.copy()  # Preserve all columns
 
-# Compute daily returns
+# Compute daily returns using 'Close' price
 df['return'] = df['Close'].pct_change()
 
 # Create lagged return features (past 5 days)
@@ -18,7 +18,7 @@ for i in range(1, 6):
 df['target'] = (df['return'].shift(-1) > 0).astype(int)
 
 # Drop rows with missing values
-df = df.dropna()
+df.dropna(inplace=True)
 
 # Define feature columns
 feature_cols = [f'return_t-{i}' for i in range(1, 6)]
