@@ -16,7 +16,7 @@ def fetch_news_data(api_key, dates, mncname):
     newsapi = NewsApiClient(api_key=api_key)
     news_data = []
     for date in dates:
-        articles = newsapi.get_everything(q=mncname, from_param=str(date), to=str(date), language='en', sort_by='relevancy')
+        articles = newsapi.get_everything(q=mncname, from_param=str(date), to=str(date), language='en', sort_by="publishedAt")
         headlines = [article['title'] for article in articles['articles']]
         news_data.append(' '.join(headlines))
         # print()
