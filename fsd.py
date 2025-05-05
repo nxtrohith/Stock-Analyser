@@ -1,54 +1,85 @@
 import yfinance as yf
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
+from sklearn.feature_extraction.text import TfidfVectorizer
+from newsapi import NewsApiClient
+from datetime import timedelta
 
-# Fetch historical stock data
-data = yf.download('JMFINANCIL.BO', start='2024-03-25', end='2025-04-30')
-df = data.copy()  # Preserve all columns
+def fetch_stock_data(ticker, start_date, end_date):
+    """Fetch historical stock data."""
+    data = yf.download(ticker, start=start_date, end=end_date)
+    print(data)
+    return data
 
-# Print fetched stock data for the given duration
-print("Stock data from 2024-03-25 to 2025-04-30:")
-print(data)
+def fetch_news_data(api_key, dates, mncname):
+    """Fetch news headlines for each date."""
+    newsapi = NewsApiClient(api_key=api_key)
+    news_data = []
+    for date in dates:
+        articles = newsapi.get_everything(q=mncname, from_param=str(date), to=str(date), language='en', sort_by='relevancy')
+        headlines = [article['title'] for article in articles['articles']]
+        news_data.append(' '.join(headlines))
+        # print()
+    return news_data
 
-# Compute daily returns using 'Close' price
-df['return'] = df['Close'].pct_change()
+def process_data(stock_data, news_data):
+    """Process stock and news data to create features and target variable."""
+    df = stock_data.copy()
+    df['date'] = df.index.date
+    df['news'] = news_data
+    df['return'] = df['Close'].pct_change()
+    df['target'] = (df['return'].shift(-1) > 0).astype(int)
+    df.dropna(inplace=True)
+    return df
 
-# Create lagged return features (past 5 days)
-for i in range(1, 60):
-    df[f'return_t-{i}'] = df['return'].shift(i)
+def train_model(X_train, y_train):
+    """Train the logistic regression model."""
+    model = LogisticRegression()
+    model.fit(X_train, y_train)
+    return model
 
-# Create target variable: 1 if next day's return is positive, 0 otherwise
-df['target'] = (df['return'].shift(-1) > 0).astype(int)
+def predict_trend(model, latest_news, vectorizer, last_date):
+    """Predict the trend based on the latest news and return the date of the prediction."""
+    latest_news_vec = vectorizer.transform([latest_news]).toarray()
+    prediction = model.predict(latest_news_vec)
+    # Calculate the next day's date
+    next_day = last_date + timedelta(days=1)
+    return 'Up' if prediction[0] == 1 else 'Down', next_day
 
-# Drop rows with missing values
-df.dropna(inplace=True)
+def main():
+    # Parameters
+    ticker = input("Enter the ticker:")
+    start_date = input("Enter the start date:")
+    end_date = input("Enter the end date:")
+    mncname = input("Enter the Recognisable name of the company:")
+    api_key = '7c1c81c5012c432c8114f0cbe4b9b221'
 
-# Define feature columns
-feature_cols = [f'return_t-{i}' for i in range(1, 6)]
-X = df[feature_cols]
-y = df['target']
+    # Fetch data
+    stock_data = fetch_stock_data(ticker, start_date, end_date)
+    news_data = fetch_news_data(api_key, stock_data.index.date, mncname)
 
-# Split data into training (80%) and testing (20%) sets
-train_size = int(len(df) * 0.8)
-X_train = X.iloc[:train_size]
-y_train = y.iloc[:train_size]
-X_test = X.iloc[train_size:]
-y_test = y.iloc[train_size:]
+    # Process data
+    df = process_data(stock_data, news_data)
+    print(df['news'])
 
-# Train logistic regression model
-model = LogisticRegression()
-model.fit(X_train, y_train)
+    # Feature extraction
+    vectorizer = TfidfVectorizer(max_features=100)
+    X_news = vectorizer.fit_transform(df['news'].fillna('')).toarray()
+    y = df['target']
 
-# Make predictions on the test set
-y_pred = model.predict(X_test)
+    # Train/test split
+    train_size = int(len(df) * 0.8)
+    X_train = X_news[:train_size]
+    y_train = y.iloc[:train_size]
 
-# Evaluate the model
-accuracy = accuracy_score(y_test, y_pred)
-print(f'Accuracy: {accuracy:.4f}')
+    # Train model
+    model = train_model(X_train, y_train)
 
-# Example prediction for the last available day
-latest_data = X.iloc[-1:].values
-prediction = model.predict(latest_data)
-trend = 'Up' if prediction[0] == 1 else 'Down'
-print(f'Predicted trend for the next day: {trend}')
+    # Predict for the latest news
+    latest_news = df['news'].iloc[-1]
+    last_date = df['date'].iloc[-1]  # Get the last date from the DataFrame
+    trend, next_day = predict_trend(model, latest_news, vectorizer, last_date)
+    print(f'Predicted trend for {mncname} based on news: {trend}')
+
+if __name__ == "__main__":
+    main()
