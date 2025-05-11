@@ -1,10 +1,4 @@
-I have reviewed your repository's main Python file (`m.py`), which implements a GUI-based Stock Trend Analyzer. I will now update the README draft to reflect the details of the `m.py` file. Once ready, you can add it directly to your repository.
-
-Here’s the updated README draft:
-
----
-
-# Stock Analyser
+# Stanalazify
 
 **A Machine Learning-based Stock Trend Analyzer using the Latest News and Stock Trends**
 
