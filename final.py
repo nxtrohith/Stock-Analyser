@@ -95,7 +95,7 @@ class GraPhs:
             plt.show()
 
     def prediction(self, stock_data, stock_ticker, trend, prediction_date):
-        plt.figure(figsize=(12, 6))
+        plt.figure(figsize=(14,7))
         plt.plot(stock_data.index, stock_data['Close'], label=f"{stock_ticker} Historical Close Price", color='blue')
         last_close = stock_data['Close'].iloc[-1]
         if trend == 'Up':
@@ -108,8 +108,8 @@ class GraPhs:
         plt.annotate(f"Predicted: {trend}",
                     xy=(prediction_date, predicted_price),
                     xytext=(prediction_date - timedelta(days=2), predicted_price * 1.05 if trend == 'Up' else predicted_price * 0.95),
-                    arrowprops=dict(facecolor=marker_color, shrink=0.05),
-                    fontsize=10,
+                    arrowprops=dict(facecolor=marker_color, shrink=0.001),
+                    fontsize=12,
                     color=marker_color)
         plt.title(f"{stock_ticker} Stock Price with Prediction for {prediction_date.strftime('%Y-%m-%d')}")
         plt.xlabel('Date')
@@ -117,13 +117,13 @@ class GraPhs:
         plt.legend()
         plt.grid(True, linestyle='--', alpha=0.7)
         plt.xticks(rotation=45)
-        plt.tight_layout()
-        plt.savefig(f"{stock_ticker}_prediction.png")
+        # plt.tight_layout()
+        plt.savefig(f"{predicted_graphs_path}\\{stock_ticker}_prediction.png")
         plt.show()
 
 
 class StockPredictor:
-    def __init__(self, stock_ticker, start_date, end_date, api_key="c9c7b905272e46879386fb61ece03ab4", company_name=None):
+    def __init__(self, stock_ticker, start_date, end_date, api_key, company_name=None):
         self.stock_ticker = stock_ticker
         self.start_date = start_date
         self.end_date = end_date
@@ -191,7 +191,7 @@ class StockPredictor:
             latest_combined = np.hstack((latest_news_vec, latest_tech))
             prediction = self.model.predict(latest_combined)
             last_date = pd.to_datetime(self.df['date'].iloc[-1]).date()
-            next_day = last_date + timedelta(days=1)
+        next_day = last_date
 
         return 'Up' if prediction[0] == 1 else 'Down', next_day
 
@@ -247,7 +247,7 @@ if not os.path.exists("OUTPUTS"):
     os.makedirs("OUTPUTS")
 if not os.path.exists("PREDICTED"):
     os.makedirs("PREDICTED")
-
+# Path to save the base graphs
 base_graphs_path = "OUTPUTS"
 predicted_graphs_path = "PREDICTED"
 
